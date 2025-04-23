@@ -42,7 +42,7 @@
 <form action="/vulnpy/xxe/lxml-etree-fromstring/" method="get">
   <div class="field has-addons">
     <div class="control">
-      <input class="input" type="text" name="user_input" placeholder="<root>attack</root>">
+      <input class="input" type="text" name="user_input" placeholder="<!ENTITY xxe SYSTEM 'file:///etc/passwd'>">
     </div>
     <div class="control">
       <button class="button is-info" action="submit">
