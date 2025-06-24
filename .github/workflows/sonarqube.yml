@@ -63,4 +63,5 @@ jobs:
               \"projectKey\": \"pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e\",
               \"sonarqube_endpoint\": \"/api/components/search\",
               \"q\": \"my-python-project\"
+			  \"qualifiers\": \"TRK\"
             }"
