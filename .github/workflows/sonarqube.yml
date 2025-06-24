@@ -19,60 +19,48 @@ jobs:
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
           
-      # Attempt the standard SonarQube scan (will fail due to VPN, but generates some artifacts)
-      - name: SonarQube Scan
-        id: sonarqube-scan
-        continue-on-error: true  # Continue even if this step fails
-        uses: SonarSource/sonarqube-scan-action@v5
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: "http://localhost:9000"  # Dummy URL since real one is behind VPN
-          SONAR_SCANNER_OPTS: "-Dsonar.projectKey=pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e -Dsonar.host.url=http://localhost:9000 -Dsonar.scm.disabled=true"
+      # First, trigger analysis via the relay service
+      - name: Trigger SonarQube Analysis
+        run: |
+          echo "Triggering analysis for project via relay service"
           
-      # Try to forward the analysis report if it exists
-      - name: Check for SonarQube Report
-        id: check-report
+          # Send a request to trigger analysis
+          curl -X POST ${{ secrets.RELAY_SERVICE_URL }}/trigger-analysis \
+            -H "Content-Type: application/json" \
+            -H "X-Relay-Auth: ${{ secrets.RELAY_API_KEY }}" \
+            -d "{
+              \"projectKey\": \"my-python-project\",
+              \"branch\": \"${GITHUB_REF#refs/heads/}\"
+            }"
+          
+      # Run SonarScanner directly (will fail to connect, but generates artifacts)
+      - name: Run SonarScanner
         continue-on-error: true
         run: |
-          REPORT_PATH=$(find . -name "report-task.txt" -type f )
-          if [ -n "$REPORT_PATH" ]; then
-            echo "report_exists=true" >> $GITHUB_OUTPUT
-            echo "report_path=$REPORT_PATH" >> $GITHUB_OUTPUT
-            CE_TASK_ID=$(grep "ceTaskId=" "$REPORT_PATH" | cut -d'=' -f2)
-            PROJECT_KEY=$(grep "projectKey=" "$REPORT_PATH" | cut -d'=' -f2)
-            echo "ce_task_id=$CE_TASK_ID" >> $GITHUB_OUTPUT
-            echo "project_key=$PROJECT_KEY" >> $GITHUB_OUTPUT
-          else
-            echo "report_exists=false" >> $GITHUB_OUTPUT
-            echo "project_key=pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e" >> $GITHUB_OUTPUT
-          fi
-      
-      # Forward the analysis to relay service - with report if available, or direct request if not
-      - name: Forward Analysis to Relay Service
+          # Create sonar-project.properties
+          echo "sonar.projectKey=my-python-project" > sonar-project.properties
+          echo "sonar.sources=." >> sonar-project.properties
+          echo "sonar.host.url=http://localhost:9000" >> sonar-project.properties
+          echo "sonar.login=${{ secrets.SONAR_TOKEN }}" >> sonar-project.properties
+          
+          # Install sonar-scanner
+          wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.7.0.2747-linux.zip
+          unzip sonar-scanner-cli-4.7.0.2747-linux.zip
+          
+          # Run scanner (will fail to connect, but that's expected )
+          ./sonar-scanner-4.7.0.2747-linux/bin/sonar-scanner -Dsonar.projectKey=my-python-project || true
+          
+      # Send project info to relay service
+      - name: Send Project Info to Relay
         run: |
-          if [ "${{ steps.check-report.outputs.report_exists }}" == "true" ]; then
-            echo "Forwarding analysis with ceTaskId: ${{ steps.check-report.outputs.ce_task_id }}"
-            
-            # Send the analysis data to your relay service
-            curl -X POST ${{ secrets.RELAY_SERVICE_URL }}/relay \
-              -H "Content-Type: application/json" \
-              -H "X-Relay-Auth: ${{ secrets.RELAY_API_KEY }}" \
-              -d "{
-                \"ceTaskId\": \"${{ steps.check-report.outputs.ce_task_id }}\",
-                \"projectKey\": \"${{ steps.check-report.outputs.project_key }}\",
-                \"sonarqube_endpoint\": \"/api/ce/submit\"
-              }"
-          else
-            echo "No report found. Sending direct analysis request."
-            
-            # Send a direct analysis request to your relay service
-            curl -X POST ${{ secrets.RELAY_SERVICE_URL }}/relay \
-              -H "Content-Type: application/json" \
-              -H "X-Relay-Auth: ${{ secrets.RELAY_API_KEY }}" \
-              -d "{
-                \"projectKey\": \"${{ steps.check-report.outputs.project_key }}\",
-                \"sonarqube_endpoint\": \"/api/projects/analyze\",
-                \"branch\": \"${GITHUB_REF#refs/heads/}\",
-                \"repository\": \"$GITHUB_REPOSITORY\"
-              }"
-          fi
+          echo "Sending project info to relay service"
+          
+          # Send project info via the relay endpoint
+          curl -X POST ${{ secrets.RELAY_SERVICE_URL }}/relay \
+            -H "Content-Type: application/json" \
+            -H "X-Relay-Auth: ${{ secrets.RELAY_API_KEY }}" \
+            -d "{
+              \"projectKey\": \"pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e\",
+              \"sonarqube_endpoint\": \"/api/components/search\",
+              \"q\": \"my-python-project\"
+            }"
