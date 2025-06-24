@@ -33,9 +33,14 @@ jobs:
               \"branch\": \"${GITHUB_REF#refs/heads/}\"
             }"
           
-      # Run SonarScanner directly (will fail to connect, but generates artifacts)
+      # Install SonarScanner
+      - name: Install SonarScanner
+        run: |
+          wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.7.0.2747-linux.zip
+          unzip sonar-scanner-cli-4.7.0.2747-linux.zip
+          
+      # Run SonarScanner to generate analysis data
       - name: Run SonarScanner
-        continue-on-error: true
         run: |
           # Create sonar-project.properties
           echo "sonar.projectKey=pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e" > sonar-project.properties
@@ -43,13 +48,30 @@ jobs:
           echo "sonar.host.url=http://localhost:9000" >> sonar-project.properties
           echo "sonar.login=${{ secrets.SONAR_TOKEN }}" >> sonar-project.properties
           
-          # Install sonar-scanner
-          wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.7.0.2747-linux.zip
-          unzip sonar-scanner-cli-4.7.0.2747-linux.zip
+          # Run scanner in local analysis mode
+          ./sonar-scanner-4.7.0.2747-linux/bin/sonar-scanner -Dsonar.projectKey=pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e -Dsonar.host.url=http://localhost:9000 -Dsonar.scm.disabled=true || true
           
-          # Run scanner (will fail to connect, but that's expected )
-          ./sonar-scanner-4.7.0.2747-linux/bin/sonar-scanner -Dsonar.projectKey=pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e || true
+      # Package and send analysis data to relay service
+      - name: Send Analysis Data to Relay
+        run: |
+          echo "Packaging and sending analysis data to relay service"
           
+          # Create a tar.gz of the .scannerwork directory
+          tar -czf analysis-data.tar.gz .scannerwork || echo "No .scannerwork directory found"
+          
+          # Base64 encode the tar.gz file for transmission
+          ANALYSIS_DATA=$(base64 -w 0 analysis-data.tar.gz || echo "Failed to encode analysis data" )
+          
+          # Send the analysis data to the relay service
+          curl -X POST ${{ secrets.RELAY_SERVICE_URL }}/analyze \
+            -H "Content-Type: application/json" \
+            -H "X-Relay-Auth: ${{ secrets.RELAY_API_KEY }}" \
+            -d "{
+              \"projectKey\": \"pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e\",
+              \"branch\": \"${GITHUB_REF#refs/heads/}\",
+              \"analysisData\": \"$ANALYSIS_DATA\"
+            }"
+            
       # Send project info to relay service with required qualifiers parameter
       - name: Send Project Info to Relay
         run: |
