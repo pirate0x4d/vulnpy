@@ -29,7 +29,7 @@ jobs:
             -H "Content-Type: application/json" \
             -H "X-Relay-Auth: ${{ secrets.RELAY_API_KEY }}" \
             -d "{
-              \"projectKey\": \"my-python-project\",
+              \"projectKey\": \"pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e\",
               \"branch\": \"${GITHUB_REF#refs/heads/}\"
             }"
           
@@ -38,7 +38,7 @@ jobs:
         continue-on-error: true
         run: |
           # Create sonar-project.properties
-          echo "sonar.projectKey=my-python-project" > sonar-project.properties
+          echo "sonar.projectKey=pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e" > sonar-project.properties
           echo "sonar.sources=." >> sonar-project.properties
           echo "sonar.host.url=http://localhost:9000" >> sonar-project.properties
           echo "sonar.login=${{ secrets.SONAR_TOKEN }}" >> sonar-project.properties
@@ -48,9 +48,9 @@ jobs:
           unzip sonar-scanner-cli-4.7.0.2747-linux.zip
           
           # Run scanner (will fail to connect, but that's expected )
-          ./sonar-scanner-4.7.0.2747-linux/bin/sonar-scanner -Dsonar.projectKey=my-python-project || true
+          ./sonar-scanner-4.7.0.2747-linux/bin/sonar-scanner -Dsonar.projectKey=pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e || true
           
-      # Send project info to relay service
+      # Send project info to relay service with required qualifiers parameter
       - name: Send Project Info to Relay
         run: |
           echo "Sending project info to relay service"
@@ -62,6 +62,21 @@ jobs:
             -d "{
               \"projectKey\": \"pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e\",
               \"sonarqube_endpoint\": \"/api/components/search\",
-              \"q\": \"my-python-project\"
-			  \"qualifiers\": \"TRK\"
+              \"q\": \"pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e\",
+              \"qualifiers\": \"TRK\"
+            }"
+            
+      # Alternative approach using projects/search endpoint
+      - name: Send Project Info via Projects Search
+        run: |
+          echo "Sending project info via projects search endpoint"
+          
+          # Send project info via the projects search endpoint
+          curl -X POST ${{ secrets.RELAY_SERVICE_URL }}/relay \
+            -H "Content-Type: application/json" \
+            -H "X-Relay-Auth: ${{ secrets.RELAY_API_KEY }}" \
+            -d "{
+              \"projectKey\": \"pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e\",
+              \"sonarqube_endpoint\": \"/api/projects/search\",
+              \"projects\": \"pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e\"
             }"
