@@ -19,36 +19,10 @@ jobs:
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
           
-      # Create a direct analysis submission to SonarQube via relay
-      - name: Submit Analysis to SonarQube
-        run: |
-          echo "Submitting direct analysis to SonarQube via relay"
-          
-          # Get repository information
-          REPO_NAME=$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 2)
-          BRANCH_NAME=${GITHUB_REF#refs/heads/}
-          COMMIT_SHA=$GITHUB_SHA
-          
-          # Send direct analysis request
-          curl -X POST ${{ secrets.RELAY_SERVICE_URL }}/relay \
-            -H "Content-Type: application/json" \
-            -H "X-Relay-Auth: ${{ secrets.RELAY_API_KEY }}" \
-            -d "{
-              \"projectKey\": \"pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e\",
-              \"sonarqube_endpoint\": \"/api/measures/component\",
-              \"component\": \"pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e\",
-              \"metricKeys\": \"ncloc,complexity,violations,coverage\"
-            }"
-          
-          # Force a new analysis via project analysis API
-          curl -X POST ${{ secrets.RELAY_SERVICE_URL }}/relay \
-            -H "Content-Type: application/json" \
-            -H "X-Relay-Auth: ${{ secrets.RELAY_API_KEY }}" \
-            -d "{
-              \"projectKey\": \"pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e\",
-              \"sonarqube_endpoint\": \"/api/project_analyses/create\",
-              \"project\": \"pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e\",
-              \"name\": \"GitHub Analysis $COMMIT_SHA\",
-              \"branch\": \"$BRANCH_NAME\",
-              \"revision\": \"$COMMIT_SHA\"
-            }"
+      # Try using the official SonarQube scanner action with direct proxy
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.RELAY_SERVICE_URL }}/sonarqube
+          SONAR_SCANNER_OPTS: "-Dsonar.projectKey=pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e"
