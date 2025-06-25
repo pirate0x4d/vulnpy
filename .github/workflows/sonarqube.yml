@@ -19,86 +19,36 @@ jobs:
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
           
-      # First, trigger analysis via the relay service
-      - name: Trigger SonarQube Analysis
+      # Create a direct analysis submission to SonarQube via relay
+      - name: Submit Analysis to SonarQube
         run: |
-          echo "Triggering analysis for project via relay service"
+          echo "Submitting direct analysis to SonarQube via relay"
           
-          # Send a request to trigger analysis
-          curl -X POST ${{ secrets.RELAY_SERVICE_URL }}/trigger-analysis \
-            -H "Content-Type: application/json" \
-            -H "X-Relay-Auth: ${{ secrets.RELAY_API_KEY }}" \
-            -d "{
-              \"projectKey\": \"pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e\",
-              \"branch\": \"${GITHUB_REF#refs/heads/}\"
-            }"
+          # Get repository information
+          REPO_NAME=$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 2)
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          COMMIT_SHA=$GITHUB_SHA
           
-      # Install SonarScanner
-      - name: Install SonarScanner
-        run: |
-          wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.7.0.2747-linux.zip
-          unzip sonar-scanner-cli-4.7.0.2747-linux.zip
-          
-      # Run SonarScanner to generate analysis data
-      - name: Run SonarScanner
-        run: |
-          # Create sonar-project.properties
-          echo "sonar.projectKey=pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e" > sonar-project.properties
-          echo "sonar.sources=." >> sonar-project.properties
-          echo "sonar.host.url=http://localhost:9000" >> sonar-project.properties
-          echo "sonar.login=${{ secrets.SONAR_TOKEN }}" >> sonar-project.properties
-          
-          # Run scanner in local analysis mode
-          ./sonar-scanner-4.7.0.2747-linux/bin/sonar-scanner -Dsonar.projectKey=pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e -Dsonar.host.url=http://localhost:9000 -Dsonar.scm.disabled=true || true
-          
-      # Package and send analysis data to relay service
-      - name: Send Analysis Data to Relay
-        run: |
-          echo "Packaging and sending analysis data to relay service"
-          
-          # Create a tar.gz of the .scannerwork directory
-          tar -czf analysis-data.tar.gz .scannerwork || echo "No .scannerwork directory found"
-          
-          # Base64 encode the tar.gz file for transmission
-          ANALYSIS_DATA=$(base64 -w 0 analysis-data.tar.gz || echo "Failed to encode analysis data" )
-          
-          # Send the analysis data to the relay service
-          curl -X POST ${{ secrets.RELAY_SERVICE_URL }}/analyze \
-            -H "Content-Type: application/json" \
-            -H "X-Relay-Auth: ${{ secrets.RELAY_API_KEY }}" \
-            -d "{
-              \"projectKey\": \"pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e\",
-              \"branch\": \"${GITHUB_REF#refs/heads/}\",
-              \"analysisData\": \"$ANALYSIS_DATA\"
-            }"
-            
-      # Send project info to relay service with required qualifiers parameter
-      - name: Send Project Info to Relay
-        run: |
-          echo "Sending project info to relay service"
-          
-          # Send project info via the relay endpoint
+          # Send direct analysis request
           curl -X POST ${{ secrets.RELAY_SERVICE_URL }}/relay \
             -H "Content-Type: application/json" \
             -H "X-Relay-Auth: ${{ secrets.RELAY_API_KEY }}" \
             -d "{
               \"projectKey\": \"pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e\",
-              \"sonarqube_endpoint\": \"/api/components/search\",
-              \"q\": \"pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e\",
-              \"qualifiers\": \"TRK\"
+              \"sonarqube_endpoint\": \"/api/measures/component\",
+              \"component\": \"pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e\",
+              \"metricKeys\": \"ncloc,complexity,violations,coverage\"
             }"
-            
-      # Alternative approach using projects/search endpoint
-      - name: Send Project Info via Projects Search
-        run: |
-          echo "Sending project info via projects search endpoint"
           
-          # Send project info via the projects search endpoint
+          # Force a new analysis via project analysis API
           curl -X POST ${{ secrets.RELAY_SERVICE_URL }}/relay \
             -H "Content-Type: application/json" \
             -H "X-Relay-Auth: ${{ secrets.RELAY_API_KEY }}" \
             -d "{
               \"projectKey\": \"pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e\",
-              \"sonarqube_endpoint\": \"/api/projects/search\",
-              \"projects\": \"pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e\"
+              \"sonarqube_endpoint\": \"/api/project_analyses/create\",
+              \"project\": \"pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e\",
+              \"name\": \"GitHub Analysis $COMMIT_SHA\",
+              \"branch\": \"$BRANCH_NAME\",
+              \"revision\": \"$COMMIT_SHA\"
             }"
