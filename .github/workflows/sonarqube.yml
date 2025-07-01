@@ -14,15 +14,17 @@ jobs:
   sonarqube:
     name: SonarQube Scan
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-          
-      # Try using the official SonarQube scanner action with direct proxy
-      - name: SonarQube Scan
+          fetch-depth: 0  # Full history required for accurate analysis
+
+      - name: SonarQube Scan via Proxy
         uses: SonarSource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.RELAY_SERVICE_URL }}/sonarqube
-          SONAR_SCANNER_OPTS: "-Dsonar.projectKey=pirate0x4d_vulnpy_0ca1e2d3-2290-4148-bb15-94a91197902e"
+          # 👇 Optional but ensures local Java is used, matching Docker config
+          SONAR_SCANNER_OPTS: "-Dsonar.scanner.externalJava=true"
