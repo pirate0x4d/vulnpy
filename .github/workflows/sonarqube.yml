@@ -1,30 +1,42 @@
-name: SonarQube Analysis
+name: SonarQube Manual Scan
 
 on:
   push:
-    branches:
-      - master
-      - main
+    branches: [main, master]
   pull_request:
-    branches:
-      - master
-      - main
+    branches: [main, master]
 
 jobs:
   sonarqube:
-    name: SonarQube Scan
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history required for accurate analysis
+          fetch-depth: 0
 
-      - name: SonarQube Scan via Proxy
-        uses: SonarSource/sonarqube-scan-action@v5
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip openjdk-17-jdk curl
+
+      - name: Download SonarScanner
+        run: |
+          curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+          unzip sonar-scanner.zip
+          sudo mv sonar-scanner-*/ /opt/sonar-scanner
+          echo "/opt/sonar-scanner/bin" >> $GITHUB_PATH
+
+      - name: Create sonar-project.properties
+        run: |
+          cat > sonar-project.properties <<EOF
+          sonar.projectKey=your_project_key
+          sonar.sources=.
+          sonar.host.url=${{ secrets.RELAY_SERVICE_URL }}/sonarqube
+          sonar.login=${{ secrets.SONAR_TOKEN }}
+          EOF
+
+      - name: Run SonarScanner
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.RELAY_SERVICE_URL }}/sonarqube
-          # 👇 Optional but ensures local Java is used, matching Docker config
           SONAR_SCANNER_OPTS: "-Dsonar.scanner.externalJava=true"
+        run: sonar-scanner -X
