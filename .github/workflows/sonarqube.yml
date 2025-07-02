@@ -32,7 +32,7 @@ jobs:
           cat > sonar-project.properties <<EOF
           sonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
           sonar.sources=.
-          sonar.host.url=${{ secrets.RELAY_SERVICE_URL }}
+          sonar.host.url=${{ secrets.RELAY_SERVICE_URL }}/sonarqube
           sonar.login=${{ secrets.SONAR_TOKEN }}
           EOF
 
