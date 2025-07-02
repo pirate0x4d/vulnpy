@@ -30,7 +30,7 @@ jobs:
       - name: Create sonar-project.properties
         run: |
           cat > sonar-project.properties <<EOF
-          sonar.projectKey=your_project_key
+          sonar.projectKey=${{SONAR_PROJECT_KEY}}
           sonar.sources=.
           sonar.host.url=${{ secrets.RELAY_SERVICE_URL }}/sonarqube
           sonar.login=${{ secrets.SONAR_TOKEN }}
