@@ -37,6 +37,4 @@ jobs:
           EOF
 
       - name: Run SonarScanner
-        env:
-          SONAR_SCANNER_OPTS: "-Dsonar.scanner.externalJava=true"
         run: sonar-scanner -X
