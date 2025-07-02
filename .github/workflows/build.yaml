@@ -18,7 +18,7 @@ jobs:
       - uses: SonarSource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.RELAY_SERVICE_URL }}
+          SONAR_HOST_URL: ${{ secrets.RELAY_SERVICE_URL }}/sonarqube
           SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
 
       # If you wish to fail your job when the Quality Gate is red, uncomment the
