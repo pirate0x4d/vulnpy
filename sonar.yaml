@@ -1,0 +1,18 @@
+options:
+  pool:
+    name: "projects/geotech-cybersecurity/locations/me-central2/workerPools/sonarqube-worker-pool"
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  # Install Python dependencies
+  # - name: 'python'
+  #   entrypoint: 'pip'
+  #   args: ['install', '-e', '.[flask,django,pyramid,falcon,wsgi,bottle,fastapi,uwsgi-max,gunicorn-min]']
+
+  # Run SonarQube scan using the official Docker image
+  - name: 'sonarsource/sonar-scanner-cli'
+    args:
+      - '-Dsonar.projectKey=pirate0x4d_vulnpy_e8758190-2da9-4432-84c9-c8b7a18de6f4'
+      - '-Dsonar.sources=.'
+      - '-Dsonar.host.url=http://10.111.0.5:9000'
+      - '-Dsonar.login=squ_d53bc869ed0fc5a5e3a7ad225b7de89fe8efb9bc'
