@@ -1,33 +1,30 @@
-options:
-  pool:
-    name: "projects/geotech-cybersecurity/locations/me-central2/workerPools/sonarqube-worker-pool"
-  logging: CLOUD_LOGGING_ONLY
-
 steps:
   # Run SonarQube scan using the official Docker image
   - name: 'sonarsource/sonar-scanner-cli'
-    # Make the secrets available to this step as environment variables
+    # Add this entrypoint to use a shell
+    entrypoint: 'sh'
     secretEnv:
       - 'SONAR_HOST'
       - 'SONAR_TOKEN'
     args:
-      - '-Dsonar.projectKey=pirate0x4d_vulnpy_e23b31f4-6b77-4104-bddb-15b03db2245b'
-      - '-Dsonar.sources=.'
-      # Use the environment variables to pass the secret values
-      - '-Dsonar.host.url=$(SONAR_HOST)'
-      - '-Dsonar.login=$(SONAR_TOKEN)'
-      # IMPORTANT: Use a variable for the branch name
-      - '-Dsonar.branch.name=${_BRANCH_NAME}'
+      # Wrap the entire command in -c "..." to pass it to the shell
+      - -c
+      - |
+        sonar-scanner \
+          -Dsonar.projectKey=pirate0x4d_vulnpy_e23b31f4-6b77-4104-bddb-15b03db2245b \
+          -Dsonar.sources=. \
+          -Dsonar.host.url=$(SONAR_HOST) \
+          -Dsonar.login=$(SONAR_TOKEN) \
+          -Dsonar.branch.name=${_BRANCH_NAME}
 
-# Define which secrets to fetch from Secret Manager
+# ... (the rest of your file remains the same)
 availableSecrets:
   secretManager:
     - versionName: projects/geotech-cybersecurity/secrets/SONAR_HOST_URL/versions/latest
-      # The environment variable name that will hold the secret
       env: 'SONAR_HOST'
     - versionName: projects/geotech-cybersecurity/secrets/SONAR_LOGIN_TOKEN/versions/latest
       env: 'SONAR_TOKEN'
 
-# Define substitutions
 substitutions:
   _BRANCH_NAME: 'master'
+
