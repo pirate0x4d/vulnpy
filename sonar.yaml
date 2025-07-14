@@ -28,6 +28,6 @@ availableSecrets:
     - versionName: projects/geotech-cybersecurity/secrets/SONAR_LOGIN_TOKEN/versions/latest
       env: 'SONAR_TOKEN'
 
-# Define substitutions (optional but good practice for branch name)
+# Define substitutions
 substitutions:
   _BRANCH_NAME: 'master'
