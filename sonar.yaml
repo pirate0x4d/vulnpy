@@ -12,7 +12,7 @@ steps:
   # Run SonarQube scan using the official Docker image
   - name: 'sonarsource/sonar-scanner-cli'
     args:
-      - '-Dsonar.projectKey=pirate0x4d_vulnpy_44201ea9-6aca-4c0c-8bf6-1eecdd9e458b'
+      - '-Dsonar.projectKey=pirate0x4d_vulnpy_871395cf-d9f5-4ea0-bee1-fa8e60b9a6dd'
       - '-Dsonar.sources=.'
       - '-Dsonar.host.url=http://10.111.0.5:9000'
       - '-Dsonar.login=squ_d53bc869ed0fc5a5e3a7ad225b7de89fe8efb9bc'
