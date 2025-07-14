@@ -6,20 +6,18 @@ options:
 steps:
   # Run SonarQube scan using the official Docker image
   - name: 'sonarsource/sonar-scanner-cli'
-    # Add this entrypoint to use a shell
     entrypoint: 'sh'
     secretEnv:
       - 'SONAR_HOST'
       - 'SONAR_TOKEN'
     args:
-      # Wrap the entire command in -c "..." to pass it to the shell
       - -c
       - |
         sonar-scanner \
           -Dsonar.projectKey=pirate0x4d_vulnpy_e23b31f4-6b77-4104-bddb-15b03db2245b \
           -Dsonar.sources=. \
-          -Dsonar.host.url=$(SONAR_HOST) \
-          -Dsonar.login=$(SONAR_TOKEN) \
+          -Dsonar.host.url=${SONAR_HOST} \
+          -Dsonar.login=${SONAR_TOKEN} \
           -Dsonar.branch.name=${_BRANCH_NAME}
 
 # ... (the rest of your file remains the same)
