@@ -4,16 +4,30 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 steps:
-  # Install Python dependencies
-  # - name: 'python'
-  #   entrypoint: 'pip'
-  #   args: ['install', '-e', '.[flask,django,pyramid,falcon,wsgi,bottle,fastapi,uwsgi-max,gunicorn-min]']
-
   # Run SonarQube scan using the official Docker image
   - name: 'sonarsource/sonar-scanner-cli'
+    # Make the secrets available to this step as environment variables
+    secretEnv:
+      - 'SONAR_HOST'
+      - 'SONAR_TOKEN'
     args:
       - '-Dsonar.projectKey=pirate0x4d_vulnpy_e23b31f4-6b77-4104-bddb-15b03db2245b'
       - '-Dsonar.sources=.'
-      - '-Dsonar.host.url=http://10.111.0.5:9000'
-      - '-Dsonar.login=squ_d53bc869ed0fc5a5e3a7ad225b7de89fe8efb9bc'
-      - '-Dsonar.branch.name=master'
+      # Use the environment variables to pass the secret values
+      - '-Dsonar.host.url=$(SONAR_HOST)'
+      - '-Dsonar.login=$(SONAR_TOKEN)'
+      # IMPORTANT: Use a variable for the branch name
+      - '-Dsonar.branch.name=${_BRANCH_NAME}'
+
+# Define which secrets to fetch from Secret Manager
+availableSecrets:
+  secretManager:
+    - versionName: projects/geotech-cybersecurity/secrets/SONAR_HOST_URL/versions/latest
+      # The environment variable name that will hold the secret
+      env: 'SONAR_HOST'
+    - versionName: projects/geotech-cybersecurity/secrets/SONAR_LOGIN_TOKEN/versions/latest
+      env: 'SONAR_TOKEN'
+
+# Define substitutions (optional but good practice for branch name)
+substitutions:
+  _BRANCH_NAME: 'master' # Default value if not provided by a trigger
