@@ -30,4 +30,4 @@ availableSecrets:
 
 # Define substitutions (optional but good practice for branch name)
 substitutions:
-  _BRANCH_NAME: 'master' # Default value if not provided by a trigger
+  _BRANCH_NAME: 'master'
