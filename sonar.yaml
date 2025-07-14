@@ -16,4 +16,4 @@ steps:
       - '-Dsonar.sources=.'
       - '-Dsonar.host.url=http://10.111.0.5:9000'
       - '-Dsonar.login=squ_d53bc869ed0fc5a5e3a7ad225b7de89fe8efb9bc'
-      - 'Dsonar.branch.name=master'
+      - '-Dsonar.branch.name=master'
