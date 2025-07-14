@@ -1,3 +1,8 @@
+options:
+  pool:
+    name: "projects/geotech-cybersecurity/locations/me-central2/workerPools/sonarqube-worker-pool"
+  logging: CLOUD_LOGGING_ONLY
+
 steps:
   # Run SonarQube scan using the official Docker image
   - name: 'sonarsource/sonar-scanner-cli'
