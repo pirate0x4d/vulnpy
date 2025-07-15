@@ -7,7 +7,8 @@ options:
 
 steps:
   # This step runs the SonarQube scan.
-  # It uses a shell entrypoint and the correct $VAR syntax for secrets.
+  # It uses a shell entrypoint and the correct $$VAR syntax to escape secrets
+  # for runtime expansion by the shell.
   - name: 'sonarsource/sonar-scanner-cli'
     entrypoint: 'sh'
     secretEnv:
@@ -16,12 +17,12 @@ steps:
     args:
       - -c
       - |
-        # Using $VAR for secrets and ${_VAR} for substitutions
+        # Using $$VAR for secrets and ${_VAR} for substitutions
         sonar-scanner \
           -Dsonar.projectKey=pirate0x4d_vulnpy_e23b31f4-6b77-4104-bddb-15b03db2245b \
           -Dsonar.sources=. \
-          -Dsonar.host.url=$SONAR_HOST \
-          -Dsonar.login=$SONAR_TOKEN \
+          -Dsonar.host.url=$$SONAR_HOST \
+          -Dsonar.login=$$SONAR_TOKEN \
           -Dsonar.branch.name=${_BRANCH_NAME}
 
 # This block tells Cloud Build to fetch the specified secrets from Secret Manager
