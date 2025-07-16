@@ -1,5 +1,5 @@
 # This is the complete and corrected cloudbuild.yaml file
-# It combines the simple, direct execution with secure secret handling.
+# It resolves the conflicting SONAR_TOKEN environment variable definition.
 
 options:
   pool:
@@ -12,31 +12,34 @@ serviceAccount: 'projects/geotech-cybersecurity/serviceAccounts/sonar-build-runn
 steps:
   - name: 'sonarsource/sonar-scanner-cli'
     # NO shell entrypoint. We run the scanner directly.
+    
+    # This block securely fetches the secrets and makes them available as environment variables.
     secretEnv:
       - 'SONAR_HOST'
       - 'SONAR_TOKEN'
-    # Set environment variables that the scanner will use
+      
+    # This block sets non-secret environment variables.
+    # The scanner will automatically use SONAR_TOKEN from secretEnv for authentication.
+    # We only need to set the memory options here.
     env:
-      # The scanner automatically uses SONAR_TOKEN for authentication
-      - 'SONAR_TOKEN=$$SONAR_TOKEN'
-      # We also set the memory options here
       - 'SONAR_SCANNER_OPTS=-Xmx2048m'
+      
     args:
       - '-Dsonar.projectKey=pirate0x4d_vulnpy_e23b31f4-6b77-4104-bddb-15b03db2245b'
       - '-Dsonar.sources=.'
-      # We still need to pass the host URL from the secret
+      # The host URL is passed from the secretEnv variable using the $$VAR syntax.
       - '-Dsonar.host.url=$$SONAR_HOST'
-      # We DO NOT need to pass sonar.login, as SONAR_TOKEN is used automatically
+      # We DO NOT need to pass sonar.login, as SONAR_TOKEN is used automatically.
       - '-Dsonar.branch.name=${_BRANCH_NAME}'
 
-# This block tells Cloud Build to fetch the specified secrets from Secret Manager
+# This block tells Cloud Build which secrets to fetch from Secret Manager.
 availableSecrets:
   secretManager:
     - versionName: projects/geotech-cybersecurity/secrets/SONAR_HOST_URL/versions/latest
-      env: 'SONAR_HOST'
+      env: 'SONAR_HOST' # This name must match the one in secretEnv
     - versionName: projects/geotech-cybersecurity/secrets/SONAR_LOGIN_TOKEN/versions/latest
-      env: 'SONAR_TOKEN'
+      env: 'SONAR_TOKEN' # This name must match the one in secretEnv
 
-# This block defines user-defined variables
+# This block defines user-defined variables.
 substitutions:
   _BRANCH_NAME: 'master'
