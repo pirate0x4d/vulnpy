@@ -1,4 +1,4 @@
-# This is the complete and corrected cloudbuild.yaml file
+# This is the complete cloudbuild.yaml file for verbose debugging
 
 options:
   pool:
@@ -6,10 +6,10 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 steps:
-  # This step runs the SonarQube scan.
-  # It uses a shell entrypoint and the correct $$VAR syntax to escape secrets
-  # for runtime expansion by the shell.
   - name: 'sonarsource/sonar-scanner-cli'
+    # Best Practice: Explicitly define the service account for this step.
+    # IMPORTANT: Replace with the full email of your new service account.
+    serviceAccount: 'projects/geotech-cybersecurity/serviceAccounts/sonar-build-runner@geotech-cybersecurity.iam.gserviceaccount.com'
     entrypoint: 'sh'
     secretEnv:
       - 'SONAR_HOST'
@@ -17,13 +17,14 @@ steps:
     args:
       - -c
       - |
-        # Using $$VAR for secrets and ${_VAR} for substitutions
+        # This command runs the SonarScanner with verbose logging enabled
         sonar-scanner \
           -Dsonar.projectKey=pirate0x4d_vulnpy_e23b31f4-6b77-4104-bddb-15b03db2245b \
           -Dsonar.sources=. \
           -Dsonar.host.url=$$SONAR_HOST \
           -Dsonar.login=$$SONAR_TOKEN \
-          -Dsonar.branch.name=${_BRANCH_NAME}
+          -Dsonar.branch.name=${_BRANCH_NAME} \
+          -Dsonar.verbose=true
 
 # This block tells Cloud Build to fetch the specified secrets from Secret Manager
 # and make them available as environment variables to the build steps.
@@ -38,4 +39,5 @@ availableSecrets:
 # When used with a Cloud Build Trigger, _BRANCH_NAME will be automatically
 # populated with the name of the branch that triggered the build.
 substitutions:
-  _BRANCH_NAME: 'master' # This is a default value if the build is run manuall
+  _BRANCH_NAME: 'master' # This is a default value if the build is run manually.
+
