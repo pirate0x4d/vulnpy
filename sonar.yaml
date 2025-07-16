@@ -1,5 +1,5 @@
-# This is the complete and corrected cloudbuild.yaml file
-# It resolves the conflicting SONAR_TOKEN environment variable definition.
+# This is the final, correct cloudbuild.yaml file.
+# It requires that the worker pool's machine type has been increased.
 
 options:
   pool:
@@ -11,34 +11,33 @@ serviceAccount: 'projects/geotech-cybersecurity/serviceAccounts/sonar-build-runn
 
 steps:
   - name: 'sonarsource/sonar-scanner-cli'
-    # NO shell entrypoint. We run the scanner directly.
-    
-    # This block securely fetches the secrets and makes them available as environment variables.
+    # We MUST use a shell to expand the secret variables.
+    entrypoint: 'sh'
     secretEnv:
       - 'SONAR_HOST'
       - 'SONAR_TOKEN'
-      
-    # This block sets non-secret environment variables.
-    # The scanner will automatically use SONAR_TOKEN from secretEnv for authentication.
-    # We only need to set the memory options here.
+    # We MUST increase the memory for the Java process itself.
     env:
-      - 'SONAR_SCANNER_OPTS=-Xmx2048m'
-      
+      - 'SONAR_SCANNER_OPTS=-Xmx4096m' # 4GB for Java
     args:
-      - '-Dsonar.projectKey=pirate0x4d_vulnpy_e23b31f4-6b77-4104-bddb-15b03db2245b'
-      - '-Dsonar.sources=.'
-      # The host URL is passed from the secretEnv variable using the $$VAR syntax.
-      - '-Dsonar.host.url=$$SONAR_HOST'
-      # We DO NOT need to pass sonar.login, as SONAR_TOKEN is used automatically.
-      - '-Dsonar.branch.name=${_BRANCH_NAME}'
+      - -c
+      - |
+        # This command will now run inside a shell with enough memory.
+        # We use the standard $VAR syntax for shell variables.
+        sonar-scanner \
+          -Dsonar.projectKey=pirate0x4d_vulnpy_e23b31f4-6b77-4104-bddb-15b03db2245b \
+          -Dsonar.sources=. \
+          -Dsonar.host.url=$SONAR_HOST \
+          -Dsonar.login=$SONAR_TOKEN \
+          -Dsonar.branch.name=${_BRANCH_NAME}
 
-# This block tells Cloud Build which secrets to fetch from Secret Manager.
+# This block tells Cloud Build to fetch the specified secrets from Secret Manager.
 availableSecrets:
   secretManager:
     - versionName: projects/geotech-cybersecurity/secrets/SONAR_HOST_URL/versions/latest
-      env: 'SONAR_HOST' # This name must match the one in secretEnv
+      env: 'SONAR_HOST'
     - versionName: projects/geotech-cybersecurity/secrets/SONAR_LOGIN_TOKEN/versions/latest
-      env: 'SONAR_TOKEN' # This name must match the one in secretEnv
+      env: 'SONAR_TOKEN'
 
 # This block defines user-defined variables.
 substitutions:
