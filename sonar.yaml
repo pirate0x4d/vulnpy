@@ -1,5 +1,5 @@
-# This is the complete and corrected cloudbuild.yaml file
-# The 'serviceAccount' field has been moved to the correct top-level location.
+# This is the complete cloudbuild.yaml file
+# It increases the memory for the SonarScanner to prevent an OutOfMemoryError.
 
 options:
   pool:
@@ -7,7 +7,6 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 # This is the service account the entire build will run as.
-# IMPORTANT: Replace with the full email of your new service account.
 serviceAccount: 'projects/geotech-cybersecurity/serviceAccounts/sonar-build-runner@geotech-cybersecurity.iam.gserviceaccount.com'
 
 steps:
@@ -16,10 +15,14 @@ steps:
     secretEnv:
       - 'SONAR_HOST'
       - 'SONAR_TOKEN'
+    # Add environment variables to the build step
+    env:
+      # Increase the JVM heap size for the scanner. Default is often too low.
+      - 'SONAR_SCANNER_OPTS=-Xmx2048m'
     args:
       - -c
       - |
-        # This command runs the SonarScanner with verbose logging enabled
+        # This command runs the SonarScanner
         sonar-scanner \
           -Dsonar.projectKey=pirate0x4d_vulnpy_e23b31f4-6b77-4104-bddb-15b03db2245b \
           -Dsonar.sources=. \
@@ -29,7 +32,6 @@ steps:
           -Dsonar.verbose=true
 
 # This block tells Cloud Build to fetch the specified secrets from Secret Manager
-# and make them available as environment variables to the build steps.
 availableSecrets:
   secretManager:
     - versionName: projects/geotech-cybersecurity/secrets/SONAR_HOST_URL/versions/latest
@@ -37,8 +39,6 @@ availableSecrets:
     - versionName: projects/geotech-cybersecurity/secrets/SONAR_LOGIN_TOKEN/versions/latest
       env: 'SONAR_TOKEN'
 
-# This block defines user-defined variables.
-# When used with a Cloud Build Trigger, _BRANCH_NAME will be automatically
-# populated with the name of the branch that triggered the build.
+# This block defines user-defined variables
 substitutions:
-  _BRANCH_NAME: 'master' # This is a default value if the build is run manually.
+  _BRANCH_NAME: 'master'
