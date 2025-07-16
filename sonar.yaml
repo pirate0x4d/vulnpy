@@ -1,43 +1,44 @@
-# This is the final, simple, and secure cloudbuild.yaml file.
-# It correctly declares and uses secrets to satisfy the Cloud Build validator.
+# This is the final and correct cloudbuild.yaml file.
+# It requires that the underlying worker pool has sufficient memory.
 
 options:
   pool:
     name: "projects/geotech-cybersecurity/locations/me-central2/workerPools/sonarqube-worker-pool"
   logging: CLOUD_LOGGING_ONLY
 
-# This block tells Cloud Build which secrets to fetch from Secret Manager.
-availableSecrets:
-  secretManager:
-    - versionName: projects/geotech-cybersecurity/secrets/SONAR_HOST_URL/versions/latest
-      env: 'SONAR_HOST_URL' # This name is used in secretEnv and $$VAR
-    - versionName: projects/geotech-cybersecurity/secrets/SONAR_LOGIN_TOKEN/versions/latest
-      env: 'SONAR_LOGIN_TOKEN' # This name is used in secretEnv and $$VAR
+# This is the service account the entire build will run as.
+serviceAccount: 'projects/geotech-cybersecurity/serviceAccounts/sonar-build-runner@geotech-cybersecurity.iam.gserviceaccount.com'
 
 steps:
-  # Run SonarQube scan using the official Docker image
   - name: 'sonarsource/sonar-scanner-cli'
-    # This block "uses" the secrets to make the validator happy.
-    # The values are now available as environment variables inside the container.
+    # We MUST use a shell to expand the secret variables.
+    entrypoint: 'sh'
     secretEnv:
       - 'SONAR_HOST_URL'
       - 'SONAR_LOGIN_TOKEN'
-      
-    # This block sets non-secret environment variables, like the one to increase memory.
+    # We MUST increase the memory for the Java process itself.
     env:
-      - 'SONAR_SCANNER_OPTS=-Xmx2048m'
-      
-    # The args list is the same as your original, but with secrets.
+      - 'SONAR_SCANNER_OPTS=-Xmx4096m' # 4GB for Java
     args:
-      - '-Dsonar.projectKey=pirate0x4d_vulnpy_e23b31f4-6b77-4104-bddb-15b03db2245b'
-      - '-Dsonar.sources=.'
-      # Replace the hardcoded URL with a secure reference to the secret.
-      - '-Dsonar.host.url=$$SONAR_HOST_URL'
-      # Replace the hardcoded token with a secure reference to the secret.
-      - '-Dsonar.login=$$SONAR_LOGIN_TOKEN'
-      # Use a substitution for the branch name for automation.
-      - '-Dsonar.branch.name=${_BRANCH_NAME}'
+      - -c
+      - |
+        # This command will now run inside a shell with enough memory.
+        # We use the $$VAR syntax to pass the variables through the validator to the shell.
+        sonar-scanner \
+          -Dsonar.projectKey=pirate0x4d_vulnpy_e23b31f4-6b77-4104-bddb-15b03db2245b \
+          -Dsonar.sources=. \
+          -Dsonar.host.url=$$SONAR_HOST_URL \
+          -Dsonar.login=$$SONAR_LOGIN_TOKEN \
+          -Dsonar.branch.name=${_BRANCH_NAME}
 
-# This block defines a default value for the branch name.
+# This block tells Cloud Build to fetch the specified secrets from Secret Manager.
+availableSecrets:
+  secretManager:
+    - versionName: projects/geotech-cybersecurity/secrets/SONAR_HOST_URL/versions/latest
+      env: 'SONAR_HOST_URL'
+    - versionName: projects/geotech-cybersecurity/secrets/SONAR_LOGIN_TOKEN/versions/latest
+      env: 'SONAR_LOGIN_TOKEN'
+
+# This block defines user-defined variables.
 substitutions:
   _BRANCH_NAME: 'master'
