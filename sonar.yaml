@@ -1,15 +1,17 @@
-# This is the complete cloudbuild.yaml file for verbose debugging
+# This is the complete and corrected cloudbuild.yaml file
+# The 'serviceAccount' field has been moved to the correct top-level location.
 
 options:
   pool:
     name: "projects/geotech-cybersecurity/locations/me-central2/workerPools/sonarqube-worker-pool"
   logging: CLOUD_LOGGING_ONLY
 
+# This is the service account the entire build will run as.
+# IMPORTANT: Replace with the full email of your new service account.
+serviceAccount: 'projects/geotech-cybersecurity/serviceAccounts/sonar-build-runner@geotech-cybersecurity.iam.gserviceaccount.com'
+
 steps:
   - name: 'sonarsource/sonar-scanner-cli'
-    # Best Practice: Explicitly define the service account for this step.
-    # IMPORTANT: Replace with the full email of your new service account.
-    serviceAccount: 'projects/geotech-cybersecurity/serviceAccounts/sonar-build-runner@geotech-cybersecurity.iam.gserviceaccount.com'
     entrypoint: 'sh'
     secretEnv:
       - 'SONAR_HOST'
@@ -39,5 +41,4 @@ availableSecrets:
 # When used with a Cloud Build Trigger, _BRANCH_NAME will be automatically
 # populated with the name of the branch that triggered the build.
 substitutions:
-  _BRANCH_NAME: 'master' # This is a default value if the build is run manually
-
+  _BRANCH_NAME: 'master' # This is a default value if the build is run manually.
