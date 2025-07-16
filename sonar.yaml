@@ -1,10 +1,12 @@
 # This is the complete cloudbuild.yaml file
-# It increases the memory for the SonarScanner to prevent an OutOfMemoryError.
+# It increases the memory for the SonarScanner to 4GB and enables full debug logging.
 
 options:
   pool:
     name: "projects/geotech-cybersecurity/locations/me-central2/workerPools/sonarqube-worker-pool"
   logging: CLOUD_LOGGING_ONLY
+  # Increase the machine type to provide more memory to the build worker itself
+  machineType: 'E2_HIGHCPU_8'
 
 # This is the service account the entire build will run as.
 serviceAccount: 'projects/geotech-cybersecurity/serviceAccounts/sonar-build-runner@geotech-cybersecurity.iam.gserviceaccount.com'
@@ -17,19 +19,19 @@ steps:
       - 'SONAR_TOKEN'
     # Add environment variables to the build step
     env:
-      # Increase the JVM heap size for the scanner. Default is often too low.
-      - 'SONAR_SCANNER_OPTS=-Xmx2048m'
+      # Increase the JVM heap size for the scanner to 4GB.
+      - 'SONAR_SCANNER_OPTS=-Xmx4096m'
     args:
       - -c
       - |
-        # This command runs the SonarScanner
+        # This command runs the SonarScanner with maximum debug logging
         sonar-scanner \
           -Dsonar.projectKey=pirate0x4d_vulnpy_e23b31f4-6b77-4104-bddb-15b03db2245b \
           -Dsonar.sources=. \
           -Dsonar.host.url=$$SONAR_HOST \
           -Dsonar.login=$$SONAR_TOKEN \
           -Dsonar.branch.name=${_BRANCH_NAME} \
-          -Dsonar.verbose=true
+          -Dsonar.log.level=DEBUG
 
 # This block tells Cloud Build to fetch the specified secrets from Secret Manager
 availableSecrets:
