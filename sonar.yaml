@@ -1,5 +1,5 @@
-# This is the final and correct cloudbuild.yaml file.
-# It requires that the underlying worker pool has sufficient memory.
+# This is the final, correct cloudbuild.yaml file.
+# It adds a writable working directory for the SonarScanner to prevent the AccessDeniedException.
 
 options:
   pool:
@@ -29,7 +29,8 @@ steps:
           -Dsonar.sources=. \
           -Dsonar.host.url=$$SONAR_HOST_URL \
           -Dsonar.login=$$SONAR_LOGIN_TOKEN \
-          -Dsonar.branch.name=${_BRANCH_NAME}
+          -Dsonar.branch.name=${_BRANCH_NAME} \
+          -Dsonar.working.directory=/tmp/.scannerwork
 
 # This block tells Cloud Build to fetch the specified secrets from Secret Manager.
 availableSecrets:
