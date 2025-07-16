@@ -38,4 +38,4 @@ availableSecrets:
 # When used with a Cloud Build Trigger, _BRANCH_NAME will be automatically
 # populated with the name of the branch that triggered the build.
 substitutions:
-  _BRANCH_NAME: 'master' # This is a default value if the build is run manually.
+  _BRANCH_NAME: 'master' # This is a default value if the build is run manually
