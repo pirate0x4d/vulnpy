@@ -1,12 +1,10 @@
-# This is the complete cloudbuild.yaml file
-# It increases the memory for the SonarScanner to 4GB and enables full debug logging.
+# This is the complete and corrected cloudbuild.yaml file
+# The invalid 'machineType' option has been removed.
 
 options:
   pool:
     name: "projects/geotech-cybersecurity/locations/me-central2/workerPools/sonarqube-worker-pool"
   logging: CLOUD_LOGGING_ONLY
-  # Increase the machine type to provide more memory to the build worker itself
-  machineType: 'E2_HIGHCPU_8'
 
 # This is the service account the entire build will run as.
 serviceAccount: 'projects/geotech-cybersecurity/serviceAccounts/sonar-build-runner@geotech-cybersecurity.iam.gserviceaccount.com'
@@ -19,8 +17,8 @@ steps:
       - 'SONAR_TOKEN'
     # Add environment variables to the build step
     env:
-      # Increase the JVM heap size for the scanner to 4GB.
-      - 'SONAR_SCANNER_OPTS=-Xmx4096m'
+      # Set a safe 2GB heap size for the scanner.
+      - 'SONAR_SCANNER_OPTS=-Xmx2048m'
     args:
       - -c
       - |
