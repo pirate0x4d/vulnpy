@@ -1,14 +1,36 @@
+# This is the simple and secure cloudbuild.yaml file.
+# It uses your original structure and securely calls secrets from Secret Manager.
+
 options:
   pool:
     name: "projects/geotech-cybersecurity/locations/me-central2/workerPools/sonarqube-worker-pool"
   logging: CLOUD_LOGGING_ONLY
 
+# This block tells Cloud Build which secrets to fetch from Secret Manager.
+availableSecrets:
+  secretManager:
+    - versionName: projects/geotech-cybersecurity/secrets/SONAR_HOST_URL/versions/latest
+      env: 'SONAR_HOST_URL' # This name is used in the $$VAR reference below
+    - versionName: projects/geotech-cybersecurity/secrets/SONAR_LOGIN_TOKEN/versions/latest
+      env: 'SONAR_LOGIN_TOKEN' # This name is used in the $$VAR reference below
+
 steps:
- # Run SonarQube scan using the official Docker image
+  # Run SonarQube scan using the official Docker image
   - name: 'sonarsource/sonar-scanner-cli'
+    # This block sets environment variables, like the one to increase memory.
+    env:
+      - 'SONAR_SCANNER_OPTS=-Xmx2048m'
+    # The args list is the same as your original, but with secrets.
     args:
       - '-Dsonar.projectKey=pirate0x4d_vulnpy_e23b31f4-6b77-4104-bddb-15b03db2245b'
       - '-Dsonar.sources=.'
-      - '-Dsonar.host.url=http://10.111.0.5:9000'
-      - '-Dsonar.login=squ_d53bc869ed0fc5a5e3a7ad225b7de89fe8efb9bc'
-      - '-Dsonar.branch.name=master'
+      # Replace the hardcoded URL with a secure reference to the secret.
+      - '-Dsonar.host.url=$$SONAR_HOST_URL'
+      # Replace the hardcoded token with a secure reference to the secret.
+      - '-Dsonar.login=$$SONAR_LOGIN_TOKEN'
+      # Use a substitution for the branch name for automation.
+      - '-Dsonar.branch.name=${_BRANCH_NAME}'
+
+# This block defines a default value for the branch name.
+substitutions:
+  _BRANCH_NAME: 'master'
