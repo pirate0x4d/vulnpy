@@ -1,5 +1,5 @@
-# This is the simple and secure cloudbuild.yaml file.
-# It uses your original structure and securely calls secrets from Secret Manager.
+# This is the final, simple, and secure cloudbuild.yaml file.
+# It correctly declares and uses secrets to satisfy the Cloud Build validator.
 
 options:
   pool:
@@ -10,16 +10,23 @@ options:
 availableSecrets:
   secretManager:
     - versionName: projects/geotech-cybersecurity/secrets/SONAR_HOST_URL/versions/latest
-      env: 'SONAR_HOST_URL' # This name is used in the $$VAR reference below
+      env: 'SONAR_HOST_URL' # This name is used in secretEnv and $$VAR
     - versionName: projects/geotech-cybersecurity/secrets/SONAR_LOGIN_TOKEN/versions/latest
-      env: 'SONAR_LOGIN_TOKEN' # This name is used in the $$VAR reference below
+      env: 'SONAR_LOGIN_TOKEN' # This name is used in secretEnv and $$VAR
 
 steps:
   # Run SonarQube scan using the official Docker image
   - name: 'sonarsource/sonar-scanner-cli'
-    # This block sets environment variables, like the one to increase memory.
+    # This block "uses" the secrets to make the validator happy.
+    # The values are now available as environment variables inside the container.
+    secretEnv:
+      - 'SONAR_HOST_URL'
+      - 'SONAR_LOGIN_TOKEN'
+      
+    # This block sets non-secret environment variables, like the one to increase memory.
     env:
       - 'SONAR_SCANNER_OPTS=-Xmx2048m'
+      
     # The args list is the same as your original, but with secrets.
     args:
       - '-Dsonar.projectKey=pirate0x4d_vulnpy_e23b31f4-6b77-4104-bddb-15b03db2245b'
