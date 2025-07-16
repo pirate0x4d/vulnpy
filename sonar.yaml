@@ -1,45 +1,14 @@
-# This is the final, correct cloudbuild.yaml file.
-# It uses the mandatory shell entrypoint with the correct $$VAR escape syntax.
-# This configuration requires that the underlying worker pool has sufficient memory (e.g., 8GB RAM).
-
 options:
   pool:
     name: "projects/geotech-cybersecurity/locations/me-central2/workerPools/sonarqube-worker-pool"
   logging: CLOUD_LOGGING_ONLY
 
-# This is the service account the entire build will run as.
-serviceAccount: 'projects/geotech-cybersecurity/serviceAccounts/sonar-build-runner@geotech-cybersecurity.iam.gserviceaccount.com'
-
 steps:
+ # Run SonarQube scan using the official Docker image
   - name: 'sonarsource/sonar-scanner-cli'
-    # We MUST use a shell to expand the secret variables.
-    entrypoint: 'sh'
-    secretEnv:
-      - 'SONAR_HOST'
-      - 'SONAR_TOKEN'
-    # We MUST increase the memory for the Java process itself.
-    env:
-      - 'SONAR_SCANNER_OPTS=-Xmx4096m' # 4GB for Java
     args:
-      - -c
-      - |
-        # This command will now run inside a shell with enough memory.
-        # We use the $$VAR syntax to pass the variables through the validator to the shell.
-        sonar-scanner \
-          -Dsonar.projectKey=pirate0x4d_vulnpy_e23b31f4-6b77-4104-bddb-15b03db2245b \
-          -Dsonar.sources=. \
-          -Dsonar.host.url=$$SONAR_HOST \
-          -Dsonar.login=$$SONAR_TOKEN \
-          -Dsonar.branch.name=${_BRANCH_NAME}
-
-# This block tells Cloud Build to fetch the specified secrets from Secret Manager.
-availableSecrets:
-  secretManager:
-    - versionName: projects/geotech-cybersecurity/secrets/SONAR_HOST_URL/versions/latest
-      env: 'SONAR_HOST'
-    - versionName: projects/geotech-cybersecurity/secrets/SONAR_LOGIN_TOKEN/versions/latest
-      env: 'SONAR_TOKEN'
-
-# This block defines user-defined variables.
-substitutions:
-  _BRANCH_NAME: 'master'
+      - '-Dsonar.projectKey=pirate0x4d_vulnpy_e23b31f4-6b77-4104-bddb-15b03db2245b'
+      - '-Dsonar.sources=.'
+      - '-Dsonar.host.url=http://10.111.0.5:9000'
+      - '-Dsonar.login=squ_d53bc869ed0fc5a5e3a7ad225b7de89fe8efb9bc'
+      - '-Dsonar.branch.name=master'
