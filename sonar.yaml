@@ -3,9 +3,6 @@ options:
     name: "projects/geotech-cybersecurity/locations/me-central2/workerPools/sonarqube-worker-pool"
   logging: CLOUD_LOGGING_ONLY
 
-# This is the service account the entire build will run as.
-serviceAccount: 'projects/geotech-cybersecurity/serviceAccounts/sonar-build-runner@geotech-cybersecurity.iam.gserviceaccount.com'
-
 steps:
   - name: 'sonarsource/sonar-scanner-cli'
     # We MUST use a shell to expand the secret variables.
