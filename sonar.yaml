@@ -4,15 +4,27 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 steps:
-  # Install Python dependencies
-  # - name: 'python'
-  #   entrypoint: 'pip'
-  #   args: ['install', '-e', '.[flask,django,pyramid,falcon,wsgi,bottle,fastapi,uwsgi-max,gunicorn-min]']
-
-  # Run SonarQube scan using the official Docker image
   - name: 'sonarsource/sonar-scanner-cli'
+    # We MUST use a shell to expand the secret variables.
+    entrypoint: 'sh'
+    secretEnv:
+      - 'SONAR_HOST_URL'
+      - 'SONAR_LOGIN_TOKEN'
     args:
-      - '-Dsonar.projectKey=pirate0x4d_vulnpy_e23b31f4-6b77-4104-bddb-15b03db2245b'
-      - '-Dsonar.sources=.'
-      - '-Dsonar.host.url=http://10.111.0.5:9000'
-      - '-Dsonar.login=squ_d53bc869ed0fc5a5e3a7ad225b7de89fe8efb9bc'
+      - -c
+      - |
+        sonar-scanner \
+          -Dsonar.projectKey=pirate0x4d_vulnpy_229ee214-5cd7-4ef1-93cb-e390f6e195e8 \
+          -Dsonar.sources=. \
+          -Dsonar.host.url=$$SONAR_HOST_URL \
+          -Dsonar.login=$$SONAR_LOGIN_TOKEN \
+          -Dsonar.branch.name=${BRANCH_NAME} \
+          -Dsonar.working.directory=/tmp/.scannerwork
+
+# This block tells Cloud Build to fetch the specified secrets from Secret Manager.
+availableSecrets:
+  secretManager:
+    - versionName: projects/geotech-cybersecurity/secrets/SONAR_HOST_URL/versions/latest
+      env: 'SONAR_HOST_URL'
+    - versionName: projects/geotech-cybersecurity/secrets/SONAR_LOGIN_TOKEN/versions/latest
+      env: 'SONAR_LOGIN_TOKEN'
