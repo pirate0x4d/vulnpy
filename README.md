@@ -188,4 +188,4 @@ vulnpy will not send real requests when invoking SSRF endpoints. To disable this
 enable vulnpy to send real network requests, set the VULNPY_REAL_SSRF_REQUESTS to any nonzero value.
 The reason for this is simply to avoid accidentally overwhelming a third-party server when testing.
 
-Vulnpy's sample web applications make use of this option.
+Vulnpy's sample web applications make use of this option
